@@ -2,8 +2,8 @@
  * Firebase Cloud Messaging Service Worker
  * خدمة العمل في الخلفية للإشعارات الدفعية
  *
- * Note: Firebase config values here are public identifiers (not secrets).
- * Replace the placeholder values with your Firebase project config.
+ * Note: Firebase config values are injected at build time by scripts/inject-sw-env.js
+ * Do NOT hardcode API keys here.
  */
 
 /* eslint-disable no-undef */
@@ -11,11 +11,11 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'AIzaSyCJzqficYDPIw05iuihaQ33uxSkrbI4zJU',
-  authDomain: 'iraqrideshare.firebaseapp.com',
-  projectId: 'iraqrideshare',
-  messagingSenderId: '509292778782',
-  appId: '1:509292778782:web:70cd3f8fcd193a3b01250f',
+  apiKey: '__FIREBASE_API_KEY__',
+  authDomain: '__FIREBASE_AUTH_DOMAIN__',
+  projectId: '__FIREBASE_PROJECT_ID__',
+  messagingSenderId: '__FIREBASE_MESSAGING_SENDER_ID__',
+  appId: '__FIREBASE_APP_ID__',
 });
 
 const messaging = firebase.messaging();
