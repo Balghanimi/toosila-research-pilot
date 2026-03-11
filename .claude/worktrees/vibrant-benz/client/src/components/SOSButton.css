@@ -1,0 +1,256 @@
+/* SOS Button Component */
+.sos-button-container {
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  z-index: 900;
+}
+
+.sos-trigger-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: sos-pulse 2s infinite;
+}
+
+.sos-trigger-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(220, 38, 38, 0.5);
+}
+
+.sos-trigger-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes sos-pulse {
+  0% {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(220, 38, 38, 0.6), 0 0 0 8px rgba(220, 38, 38, 0.1);
+  }
+  100% {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  }
+}
+
+/* SOS Modal */
+.sos-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.sos-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.sos-modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 12px;
+}
+
+.sos-modal h3 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+  color: #1a1a1a;
+}
+
+.sos-modal p {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 20px;
+}
+
+/* Alert Type Selection */
+.sos-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sos-type-btn {
+  padding: 12px 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sos-type-btn:hover {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.sos-type-btn.selected {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.sos-type-btn .sos-type-icon {
+  font-size: 1.5rem;
+}
+
+.sos-type-btn .sos-type-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Message Input */
+.sos-message-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  resize: none;
+  height: 60px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.sos-message-input:focus {
+  outline: none;
+  border-color: #dc2626;
+}
+
+/* Action Buttons */
+.sos-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sos-send-btn {
+  width: 100%;
+  padding: 14px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sos-send-btn:hover {
+  background: #b91c1c;
+}
+
+.sos-send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sos-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sos-cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+/* Success State */
+.sos-success {
+  text-align: center;
+  padding: 20px;
+}
+
+.sos-success-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.sos-success h3 {
+  color: #166534;
+  margin: 0 0 8px;
+}
+
+.sos-success p {
+  color: #666;
+  margin: 0 0 20px;
+}
+
+.sos-success .sos-cancel-alert-btn {
+  width: 100%;
+  padding: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.sos-success .sos-cancel-alert-btn:hover {
+  background: #fee2e2;
+}
+
+/* Location Status */
+.sos-location-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.sos-location-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.sos-location-dot.active {
+  background: #22c55e;
+}
+
+.sos-location-dot.inactive {
+  background: #d1d5db;
+}

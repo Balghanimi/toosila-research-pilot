@@ -1,0 +1,73 @@
+# تشغيل Migration 009 على Railway Production
+
+## الخطوات:
+
+### الطريقة 1: استخدام Railway Dashboard (الأسهل)
+
+1. افتح [Railway Dashboard](https://railway.app/dashboard)
+2. اختر مشروع **toosila-project**
+3. اختر الـ **Backend Service**
+4. اضغط على **Shell** من القائمة الجانبية
+5. انسخ والصق الأمر التالي في Shell:
+
+```bash
+npm run db:migrate:009
+```
+
+6. اضغط Enter وانتظر حتى يكتمل التنفيذ
+
+---
+
+### الطريقة 2: استخدام Railway CLI
+
+إذا كان لديك Railway CLI مثبت:
+
+```bash
+railway login --browserless
+railway link
+railway run npm run db:migrate:009
+```
+
+---
+
+### الطريقة 3: الاتصال المباشر بقاعدة البيانات
+
+1. من Railway Dashboard، اذهب إلى **Database Service**
+2. انسخ **DATABASE_URL** من Variables
+3. قم بتشغيل هذا الأمر محلياً (استبدل DATABASE_URL بالقيمة المنسوخة):
+
+```bash
+psql "YOUR_DATABASE_URL_HERE" -f "C:\Users\a2z\toosila-project\server\migrations\009_add_messages_read_status.sql"
+```
+
+---
+
+## ماذا سيحدث عند تشغيل Migration؟
+
+✅ سيضيف 4 أعمدة جديدة لجدول messages:
+- `is_read` - لتتبع الرسائل المقروءة
+- `read_at` - وقت القراءة
+- `read_by` - من قرأ الرسالة
+- `updated_at` - آخر تحديث
+
+✅ سيضيف 3 indexes للأداء
+
+✅ سيضيف trigger تلقائي لتحديث updated_at
+
+✅ ستختفي جميع أخطاء "column m.is_read does not exist"
+
+✅ ستعمل وظيفة الحذف بشكل صحيح
+
+---
+
+## بعد تشغيل Migration:
+
+1. حدّث صفحة التطبيق في المتصفح (F5)
+2. جرب حذف عرض - يجب أن يعمل بدون أخطاء
+3. تأكد من اختفاء الأخطاء من Console
+
+---
+
+## إذا واجهت مشاكل:
+
+أخبرني وسأساعدك! 🚀

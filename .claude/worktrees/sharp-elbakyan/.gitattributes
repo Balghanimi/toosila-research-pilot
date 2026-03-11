@@ -1,0 +1,11 @@
+# Ensure shell scripts always use LF line endings (Unix)
+*.sh text eol=lf
+
+# Ensure SQL files use LF
+*.sql text eol=lf
+
+# Ensure JavaScript files use LF (fixes Railway build issues)
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf

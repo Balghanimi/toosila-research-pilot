@@ -1,0 +1,285 @@
+{
+  "governorates": [
+    {
+      "id": 1,
+      "name_ar": "بغداد",
+      "name_en": "Baghdad",
+      "capital_ar": "بغداد",
+      "capital_en": "Baghdad",
+      "lat": 33.3152,
+      "lng": 44.3661,
+      "population": 8000000,
+      "cities": [
+        { "ar": "بغداد", "en": "Baghdad" },
+        { "ar": "الكاظمية", "en": "Kadhimiya" },
+        { "ar": "الأعظمية", "en": "Adhamiyah" },
+        { "ar": "المنصور", "en": "Mansour" },
+        { "ar": "الكرادة", "en": "Karrada" }
+      ]
+    },
+    {
+      "id": 2,
+      "name_ar": "البصرة",
+      "name_en": "Basra",
+      "capital_ar": "البصرة",
+      "capital_en": "Basra",
+      "lat": 30.5085,
+      "lng": 47.7804,
+      "population": 2750000,
+      "cities": [
+        { "ar": "البصرة", "en": "Basra" },
+        { "ar": "الزبير", "en": "Zubair" },
+        { "ar": "أبو الخصيب", "en": "Abu Al-Khaseeb" },
+        { "ar": "الفاو", "en": "Fao" }
+      ]
+    },
+    {
+      "id": 3,
+      "name_ar": "نينوى",
+      "name_en": "Nineveh",
+      "capital_ar": "الموصل",
+      "capital_en": "Mosul",
+      "lat": 36.3350,
+      "lng": 43.1189,
+      "population": 3500000,
+      "cities": [
+        { "ar": "الموصل", "en": "Mosul" },
+        { "ar": "تلعفر", "en": "Tal Afar" },
+        { "ar": "سنجار", "en": "Sinjar" }
+      ]
+    },
+    {
+      "id": 4,
+      "name_ar": "أربيل",
+      "name_en": "Erbil",
+      "capital_ar": "أربيل",
+      "capital_en": "Erbil",
+      "lat": 36.1901,
+      "lng": 44.0091,
+      "population": 1750000,
+      "cities": [
+        { "ar": "أربيل", "en": "Erbil" },
+        { "ar": "شقلاوة", "en": "Shaqlawa" },
+        { "ar": "سوران", "en": "Soran" }
+      ]
+    },
+    {
+      "id": 5,
+      "name_ar": "السليمانية",
+      "name_en": "Sulaymaniyah",
+      "capital_ar": "السليمانية",
+      "capital_en": "Sulaymaniyah",
+      "lat": 35.5613,
+      "lng": 45.4306,
+      "population": 1900000,
+      "cities": [
+        { "ar": "السليمانية", "en": "Sulaymaniyah" },
+        { "ar": "حلبجة", "en": "Halabja" },
+        { "ar": "رانية", "en": "Ranya" }
+      ]
+    },
+    {
+      "id": 6,
+      "name_ar": "دهوك",
+      "name_en": "Duhok",
+      "capital_ar": "دهوك",
+      "capital_en": "Duhok",
+      "lat": 36.8669,
+      "lng": 42.9503,
+      "population": 1200000,
+      "cities": [
+        { "ar": "دهوك", "en": "Duhok" },
+        { "ar": "زاخو", "en": "Zakho" },
+        { "ar": "العمادية", "en": "Amadiya" }
+      ]
+    },
+    {
+      "id": 7,
+      "name_ar": "كركوك",
+      "name_en": "Kirkuk",
+      "capital_ar": "كركوك",
+      "capital_en": "Kirkuk",
+      "lat": 35.4681,
+      "lng": 44.3922,
+      "population": 1450000,
+      "cities": [
+        { "ar": "كركوك", "en": "Kirkuk" },
+        { "ar": "الحويجة", "en": "Hawija" }
+      ]
+    },
+    {
+      "id": 8,
+      "name_ar": "ديالى",
+      "name_en": "Diyala",
+      "capital_ar": "بعقوبة",
+      "capital_en": "Baqubah",
+      "lat": 33.7733,
+      "lng": 45.1456,
+      "population": 1500000,
+      "cities": [
+        { "ar": "بعقوبة", "en": "Baqubah" },
+        { "ar": "المقدادية", "en": "Muqdadiyah" },
+        { "ar": "خانقين", "en": "Khanaqin" }
+      ]
+    },
+    {
+      "id": 9,
+      "name_ar": "الأنبار",
+      "name_en": "Anbar",
+      "capital_ar": "الرمادي",
+      "capital_en": "Ramadi",
+      "lat": 33.4256,
+      "lng": 43.2989,
+      "population": 1600000,
+      "cities": [
+        { "ar": "الرمادي", "en": "Ramadi" },
+        { "ar": "الفلوجة", "en": "Fallujah" },
+        { "ar": "هيت", "en": "Hit" }
+      ]
+    },
+    {
+      "id": 10,
+      "name_ar": "بابل",
+      "name_en": "Babylon",
+      "capital_ar": "الحلة",
+      "capital_en": "Hillah",
+      "lat": 32.4683,
+      "lng": 44.4203,
+      "population": 1900000,
+      "cities": [
+        { "ar": "الحلة", "en": "Hillah" },
+        { "ar": "المسيب", "en": "Musayyib" },
+        { "ar": "المحاويل", "en": "Mahawil" }
+      ]
+    },
+    {
+      "id": 11,
+      "name_ar": "كربلاء",
+      "name_en": "Karbala",
+      "capital_ar": "كربلاء",
+      "capital_en": "Karbala",
+      "lat": 32.6160,
+      "lng": 44.0246,
+      "population": 1100000,
+      "cities": [
+        { "ar": "كربلاء", "en": "Karbala" },
+        { "ar": "عين التمر", "en": "Ain Al-Tamur" }
+      ]
+    },
+    {
+      "id": 12,
+      "name_ar": "النجف",
+      "name_en": "Najaf",
+      "capital_ar": "النجف",
+      "capital_en": "Najaf",
+      "lat": 31.9907,
+      "lng": 44.3148,
+      "population": 1300000,
+      "cities": [
+        { "ar": "النجف", "en": "Najaf" },
+        { "ar": "الكوفة", "en": "Kufa" },
+        { "ar": "المناذرة", "en": "Manathira" }
+      ]
+    },
+    {
+      "id": 13,
+      "name_ar": "واسط",
+      "name_en": "Wasit",
+      "capital_ar": "الكوت",
+      "capital_en": "Kut",
+      "lat": 32.5000,
+      "lng": 45.8333,
+      "population": 1200000,
+      "cities": [
+        { "ar": "الكوت", "en": "Kut" },
+        { "ar": "الصويرة", "en": "Suwaira" },
+        { "ar": "النعمانية", "en": "Numaniyah" }
+      ]
+    },
+    {
+      "id": 14,
+      "name_ar": "صلاح الدين",
+      "name_en": "Saladin",
+      "capital_ar": "تكريت",
+      "capital_en": "Tikrit",
+      "lat": 34.4672,
+      "lng": 43.5833,
+      "population": 1400000,
+      "cities": [
+        { "ar": "تكريت", "en": "Tikrit" },
+        { "ar": "سامراء", "en": "Samarra" },
+        { "ar": "بيجي", "en": "Baiji" }
+      ]
+    },
+    {
+      "id": 15,
+      "name_ar": "ذي قار",
+      "name_en": "Dhi Qar",
+      "capital_ar": "الناصرية",
+      "capital_en": "Nasiriyah",
+      "lat": 31.0439,
+      "lng": 46.2581,
+      "population": 1900000,
+      "cities": [
+        { "ar": "الناصرية", "en": "Nasiriyah" },
+        { "ar": "الشطرة", "en": "Shatra" },
+        { "ar": "الرفاعي", "en": "Rifai" }
+      ]
+    },
+    {
+      "id": 16,
+      "name_ar": "المثنى",
+      "name_en": "Muthanna",
+      "capital_ar": "السماوة",
+      "capital_en": "Samawah",
+      "lat": 29.9394,
+      "lng": 45.2981,
+      "population": 750000,
+      "cities": [
+        { "ar": "السماوة", "en": "Samawah" },
+        { "ar": "الرميثة", "en": "Rumaitha" }
+      ]
+    },
+    {
+      "id": 17,
+      "name_ar": "القادسية",
+      "name_en": "Qadisiyah",
+      "capital_ar": "الديوانية",
+      "capital_en": "Diwaniyah",
+      "lat": 31.9897,
+      "lng": 44.9267,
+      "population": 1200000,
+      "cities": [
+        { "ar": "الديوانية", "en": "Diwaniyah" },
+        { "ar": "عفك", "en": "Afak" },
+        { "ar": "الشامية", "en": "Shamiya" }
+      ]
+    },
+    {
+      "id": 18,
+      "name_ar": "ميسان",
+      "name_en": "Maysan",
+      "capital_ar": "العمارة",
+      "capital_en": "Amarah",
+      "lat": 31.8389,
+      "lng": 47.1456,
+      "population": 1000000,
+      "cities": [
+        { "ar": "العمارة", "en": "Amarah" },
+        { "ar": "علي الغربي", "en": "Ali Al-Gharbi" },
+        { "ar": "المجر الكبير", "en": "Majar Al-Kabir" }
+      ]
+    }
+  ],
+  "popularRoutes": [
+    { "from": "بغداد", "to": "البصرة", "distance_km": 545, "duration_hours": 6 },
+    { "from": "بغداد", "to": "أربيل", "distance_km": 350, "duration_hours": 4 },
+    { "from": "بغداد", "to": "كربلاء", "distance_km": 100, "duration_hours": 1.5 },
+    { "from": "بغداد", "to": "النجف", "distance_km": 160, "duration_hours": 2 },
+    { "from": "بغداد", "to": "الموصل", "distance_km": 400, "duration_hours": 5 },
+    { "from": "كربلاء", "to": "النجف", "distance_km": 80, "duration_hours": 1 },
+    { "from": "أربيل", "to": "السليمانية", "distance_km": 160, "duration_hours": 2 },
+    { "from": "أربيل", "to": "دهوك", "distance_km": 150, "duration_hours": 2 },
+    { "from": "البصرة", "to": "الناصرية", "distance_km": 180, "duration_hours": 2.5 }
+  ]
+}

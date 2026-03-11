@@ -1,0 +1,195 @@
+/* Notification Badge Animations */
+/* توصيلة - Toosila */
+
+/* النقطة الحمراء الأساسية */
+.notificationBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  border: 2px solid white;
+  z-index: 10;
+  font-family: 'Cairo', sans-serif;
+}
+
+/* Animation نبض عند وجود إشعارات */
+.notificationBadge.hasNew {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.7);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  }
+}
+
+/* Animation ظهور النقطة */
+.notificationBadge.animateIn {
+  animation: badgeAppear 0.4s ease-out;
+}
+
+@keyframes badgeAppear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Animation اهتزاز للفت الانتباه */
+.notificationBadge.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+/* RTL Support */
+[dir='rtl'] .notificationBadge {
+  right: auto;
+  left: -4px;
+}
+
+/* للأيقونة في الـ Header */
+.notificationBellWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notificationBellWrapper .notificationBadge {
+  top: -2px;
+  right: -2px;
+}
+
+[dir='rtl'] .notificationBellWrapper .notificationBadge {
+  right: auto;
+  left: -2px;
+}
+
+/* Animation للجرس نفسه */
+.notificationBell.ring {
+  animation: ring 0.5s ease-in-out;
+}
+
+@keyframes ring {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: rotate(-10deg);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: rotate(10deg);
+  }
+}
+
+/* Glow effect للإشعارات الجديدة */
+.notificationBadge.glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(239, 68, 68, 0.8),
+      0 0 30px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* Bounce animation */
+.notificationBadge.bounce {
+  animation: bounce 1s ease-in-out;
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Combined effect: pulse + glow */
+.notificationBadge.active {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow:
+      0 0 20px rgba(239, 68, 68, 0.8),
+      0 4px 15px rgba(239, 68, 68, 0.7);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+  }
+}

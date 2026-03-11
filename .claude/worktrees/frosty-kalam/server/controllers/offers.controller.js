@@ -1,0 +1,264 @@
+const Offer = require('../models/offers.model');
+const { asyncHandler, AppError } = require('../middlewares/error');
+const { invalidateOfferCache, invalidateUserStats } = require('../middlewares/cache');
+const { auditLog } = require('../middlewares/audit');
+// const moderationAgent = require('../agents/moderation.agent'); // Temporarily disabled
+// const { query } = require('../config/db'); // Temporarily disabled
+
+// Create a new offer
+const createOffer = asyncHandler(async (req, res) => {
+  const { fromCity, toCity, departureTime, seats, price, isLadiesOnly } = req.body;
+
+  // Ladies-only validation: Only female drivers can create ladies-only offers
+  if (isLadiesOnly && req.user.gender !== 'female') {
+    throw new AppError('فقط السائقات الإناث يمكنهن إنشاء رحلات للنساء فقط', 403);
+  }
+
+  // Create offer
+  const offer = await Offer.create({
+    driverId: req.user.id,
+    fromCity,
+    toCity,
+    departureTime,
+    seats,
+    price,
+    isLadiesOnly: isLadiesOnly || false
+  });
+
+  // Invalidate offer cache and user stats
+  invalidateOfferCache();
+  invalidateUserStats(req.user.id);
+
+  // Audit log for offer creation
+  await auditLog(
+    'offers',
+    offer.id,
+    'create',
+    null,
+    { fromCity, toCity, departureTime, seats, price, isLadiesOnly: isLadiesOnly || false },
+    req.user.id,
+    req.ip
+  );
+
+  res.status(201).json({
+    success: true,
+    message: 'تم إنشاء العرض بنجاح',
+    offer: offer.toJSON()
+  });
+});
+
+// Get all offers with filters and pagination
+const getOffers = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    fromCity,
+    toCity,
+    minPrice,
+    maxPrice,
+    minSeats,
+    driverId,
+    departureDate,
+    sortBy = 'date',
+    ladies_only
+  } = req.query;
+
+  const filters = {};
+  if (fromCity) filters.fromCity = fromCity;
+  if (toCity) filters.toCity = toCity;
+  if (minPrice) filters.minPrice = parseFloat(minPrice);
+  if (maxPrice) filters.maxPrice = parseFloat(maxPrice);
+  if (minSeats) filters.minSeats = parseInt(minSeats);
+  if (driverId) filters.driverId = driverId;
+  if (departureDate) filters.departureDate = departureDate;
+  if (sortBy) filters.sortBy = sortBy;
+
+  // Ladies-only filter
+  if (ladies_only !== undefined) {
+    filters.ladiesOnly = ladies_only === 'true' || ladies_only === true;
+  }
+
+  // Pass user gender for filtering (females see all, males see non-ladies-only)
+  if (req.user?.gender) {
+    filters.userGender = req.user.gender;
+  }
+
+  // req.user may be set by optionalAuth middleware
+  const currentUserId = req.user?.id || null;
+
+  const result = await Offer.findAll(parseInt(page), parseInt(limit), filters, currentUserId);
+
+  res.json(result);
+});
+
+// Get offer by ID (with optional user booking status)
+const getOfferById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  // req.user may be set by optionalAuth middleware
+  const currentUserId = req.user?.id || null;
+
+  const offer = await Offer.findById(id, currentUserId);
+  if (!offer) {
+    throw new AppError('العرض غير موجود', 404);
+  }
+
+  // Get offer statistics
+  const stats = await Offer.getStats(id);
+
+  res.json({
+    offer: offer.toJSON(),
+    stats
+  });
+});
+
+// Update offer
+const updateOffer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { fromCity, toCity, departureTime, seats, price } = req.body;
+
+  const offer = await Offer.findById(id);
+  if (!offer) {
+    throw new AppError('العرض غير موجود', 404);
+  }
+
+  // Check if user owns the offer
+  if (offer.driverId !== req.user.id && req.user.role !== 'admin') {
+    throw new AppError('يمكنك فقط تعديل عروضك الخاصة', 403);
+  }
+
+  const updateData = {};
+  if (fromCity) updateData.from_city = fromCity;
+  if (toCity) updateData.to_city = toCity;
+  if (departureTime) updateData.departure_time = departureTime;
+  if (seats) updateData.seats = seats;
+  if (price) updateData.price = price;
+
+  // Store old data for audit
+  const oldData = offer.toJSON();
+
+  const updatedOffer = await offer.update(updateData);
+
+  // Invalidate offer cache
+  invalidateOfferCache();
+
+  // Audit log for offer update
+  await auditLog(
+    'offers',
+    id,
+    'update',
+    oldData,
+    updatedOffer.toJSON(),
+    req.user.id,
+    req.ip
+  );
+
+  res.json({
+    message: 'تم تحديث العرض بنجاح',
+    offer: updatedOffer.toJSON()
+  });
+});
+
+// Deactivate offer
+const deactivateOffer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const offer = await Offer.findById(id);
+  if (!offer) {
+    throw new AppError('العرض غير موجود', 404);
+  }
+
+  // Check if user owns the offer
+  if (offer.driverId !== req.user.id && req.user.role !== 'admin') {
+    throw new AppError('يمكنك فقط إلغاء تفعيل عروضك الخاصة', 403);
+  }
+
+  // Store old data for audit
+  const oldData = offer.toJSON();
+
+  await offer.deactivate();
+
+  // Invalidate offer cache and user stats
+  invalidateOfferCache();
+  invalidateUserStats(offer.driverId);
+
+  // Audit log for offer deactivation
+  await auditLog(
+    'offers',
+    id,
+    'delete',
+    oldData,
+    { is_active: false },
+    req.user.id,
+    req.ip
+  );
+
+  res.json({
+    message: 'تم إلغاء تفعيل العرض بنجاح'
+  });
+});
+
+// Get user's offers
+const getUserOffers = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  const driverId = req.params.userId || req.user.id;
+
+  const result = await Offer.findByDriverId(driverId, parseInt(page), parseInt(limit));
+
+  res.json(result);
+});
+
+// Search offers
+const searchOffers = asyncHandler(async (req, res) => {
+  const { q: searchTerm, page = 1, limit = 10 } = req.query;
+
+  if (!searchTerm) {
+    throw new AppError('مطلوب كلمة بحث', 400);
+  }
+
+  const result = await Offer.search(searchTerm, parseInt(page), parseInt(limit));
+
+  res.json(result);
+});
+
+// Get offer categories (Iraqi cities)
+const getCategories = asyncHandler(async (req, res) => {
+  const { query } = require('../config/db');
+
+  const result = await query('SELECT * FROM categories WHERE is_active = true ORDER BY name');
+
+  res.json({
+    categories: result.rows
+  });
+});
+
+// Get offer statistics (admin only)
+const getOfferStats = asyncHandler(async (req, res) => {
+  const { query } = require('../config/db');
+
+  const result = await query(`
+    SELECT
+      COUNT(*)::int as total_offers,
+      COUNT(CASE WHEN is_active = true THEN 1 END)::int as active_offers,
+      COUNT(CASE WHEN is_active = false THEN 1 END)::int as inactive_offers,
+      AVG(price)::numeric(10,2) as average_price,
+      SUM(seats)::int as total_seats
+    FROM offers
+  `);
+
+  res.json({
+    stats: result.rows[0]
+  });
+});
+
+module.exports = {
+  createOffer,
+  getOffers,
+  getOfferById,
+  updateOffer,
+  deactivateOffer,
+  getUserOffers,
+  searchOffers,
+  getCategories,
+  getOfferStats
+};
+

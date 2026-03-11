@@ -1,0 +1,812 @@
+/* Header Component - 3 Section Layout */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  width: 100%;
+  max-width: 100vw;
+  padding: 0 var(--space-6);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  direction: rtl;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: var(--space-4);
+}
+
+body.dark-mode .header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: rgba(51, 65, 85, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Right Section: Logo + App Name */
+.logoSection {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.logoButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.logoButton:hover {
+  background: var(--surface-secondary);
+  transform: translateY(-1px);
+}
+
+.logoButton:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.logo {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.logoButton:hover .logo {
+  transform: scale(1.05);
+}
+
+/* New text-as-car logo */
+.logoText {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.logoButton:hover .logoText {
+  transform: translateY(-1px);
+}
+
+.appName {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+/* Mobile Toggle - Hidden on desktop, shown on mobile */
+.mobileToggle {
+  display: none;
+}
+
+/* Desktop Toggle - Shown on desktop, hidden on mobile */
+.desktopToggle {
+  display: flex;
+  margin-left: 16px;
+}
+
+/* Center Section: Navigation Links */
+.centerNav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-4);
+}
+
+.navLink {
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  font-weight: 500;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  outline: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.navLink:hover {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+
+.navLink:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.navLinkActive {
+  color: var(--primary);
+  font-weight: 600;
+  background: transparent;
+}
+
+.navLinkActive::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  right: var(--space-4);
+  left: var(--space-4);
+  height: 2px;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+}
+
+.navBadge {
+  background: #dc2626;
+  color: white;
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+/* Left Section: User Actions */
+.actionsSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Hamburger Button - Enhanced */
+.hamburgerButton {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: var(--text-xl);
+  color: #ffffff;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.hamburgerButton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--primary-light);
+  opacity: 0;
+  border-radius: var(--radius);
+  transition: opacity 0.3s ease;
+}
+
+.hamburgerButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.hamburgerButton:hover::before {
+  opacity: 0.1;
+}
+
+.hamburgerButton:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.hamburgerButton:active {
+  transform: scale(0.95) translateY(0);
+}
+
+/* Language Toggle Chip */
+.languageChip {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  direction: rtl;
+  text-align: center;
+  min-width: 36px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.languageChip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.languageChip:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.languageChip:active {
+  transform: scale(0.95);
+}
+
+/* Icon Button - compact circular button */
+.iconButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  border: none;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.iconButton:hover {
+  background: rgba(16, 185, 129, 0.25);
+  transform: scale(1.05);
+}
+
+.langText {
+  font-size: 11px;
+  font-weight: 700;
+  color: inherit;
+}
+
+/* Login Button - Enhanced */
+.loginButton {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--text-white);
+  border: none;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  direction: rtl;
+  text-align: center;
+  height: 40px;
+  min-width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(52, 199, 89, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.loginButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.loginButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.35);
+}
+
+.loginButton:hover::before {
+  left: 100%;
+}
+
+.loginButton:focus-visible {
+  box-shadow:
+    var(--focus-ring),
+    0 4px 12px rgba(52, 199, 89, 0.35);
+}
+
+.loginButton:active {
+  transform: translateY(0);
+}
+
+/* User Avatar - Modern Green Theme */
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: var(--text-base);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  outline: none;
+  color: white;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.userAvatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.userAvatar:active {
+  transform: scale(0.95);
+}
+
+.userAvatar:focus-visible {
+  box-shadow:
+    var(--focus-ring),
+    0 4px 12px rgba(22, 163, 74, 0.4);
+}
+
+.userAvatar svg {
+  color: white;
+}
+
+/* Drawer Styles */
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: row;
+  /* القائمة تظهر من اليسار */
+  justify-content: flex-start !important;
+  /* Menu appears from LEFT side */
+  align-items: stretch;
+  direction: ltr;
+  /* LTR direction - drawer appears from LEFT */
+  touch-action: none;
+  /* Prevent scroll chaining on the background */
+}
+
+.drawerOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--surface-overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1;
+}
+
+.drawerContent {
+  position: relative;
+  z-index: 2;
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 320px !important;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--surface-primary);
+  border-right: 1px solid var(--border-light);
+  /* Border on RIGHT side (drawer comes from LEFT) */
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  animation: slideInFromLeft 0.3s ease-out;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  overscroll-behavior: contain;
+  /* Prevent scroll chaining */
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    /* Slide from LEFT (outside screen on the left) */
+  }
+
+  to {
+    transform: translateX(0);
+    /* End at normal position */
+  }
+}
+
+.drawerHeader {
+  padding: var(--space-6) var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: rtl;
+}
+
+.drawerHeader h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+}
+
+.drawerClose {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: var(--text-lg);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.drawerClose:hover {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+
+.drawerClose:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.drawerBody {
+  flex: 1;
+  padding: var(--space-4) var(--space-5);
+  direction: rtl;
+  overflow-y: auto;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  margin: var(--space-8) 0;
+  font-style: italic;
+}
+
+/* Drawer Menu Items */
+.drawerItem {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  text-align: right;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  /* Allow text to show fully */
+  white-space: normal;
+  overflow: visible;
+  word-break: keep-all;
+}
+
+.drawerItem:hover {
+  background: var(--surface-secondary);
+  transform: translateX(2px);
+}
+
+.drawerItem:active {
+  transform: translateX(4px);
+  background: var(--primary-light);
+}
+
+/* Drawer Section Headers */
+.drawerSection {
+  padding: var(--space-3) var(--space-2);
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Mobile Action Buttons - Separate from desktop */
+.mobileActionButtons {
+  display: none;
+}
+
+/* Responsive Design - New Mobile Header Layout */
+@media (max-width: 768px) {
+  .header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 0 16px;
+    height: 60px;
+    direction: rtl;
+    gap: 10px;
+  }
+
+  /* Hide center navigation on mobile */
+  .centerNav {
+    display: none !important;
+  }
+
+  /* Hide desktop toggle on mobile */
+  .desktopToggle {
+    display: none !important;
+  }
+
+  /* HAMBURGER - Keep visible but smaller */
+  .hamburgerButton {
+    display: flex !important;
+    justify-self: start;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 18px;
+    box-shadow: none;
+    order: 2;
+    /* Left side in RTL */
+  }
+
+  .hamburgerButton:hover {
+    background: var(--surface-secondary);
+    transform: scale(1.02);
+  }
+
+  /* LOGO - HIDDEN ON MOBILE */
+  .logoSection {
+    display: none !important;
+  }
+
+  /* MODE TOGGLE - Center column */
+  .mobileToggle {
+    display: flex !important;
+    justify-self: center;
+    order: 1;
+  }
+
+  /* MOBILE ACTION BUTTONS - Right column (LEFT side in RTL) */
+  .mobileActionButtons {
+    display: flex !important;
+    align-items: center;
+    justify-self: end;
+    gap: 8px;
+    justify-self: end;
+    gap: 8px;
+    order: 0;
+    /* Right side in RTL */
+  }
+
+  /* Hide desktop action buttons on mobile */
+  .actionButtons {
+    display: none !important;
+  }
+
+  /* ALL ICONS - OPTIMIZED SIZE */
+  .mobileActionButtons .userAvatar {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px;
+    min-height: 40px;
+    background: var(--primary);
+    border-radius: 50%;
+    color: white;
+    font-size: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  }
+
+  /* Icon button base - compact size */
+  .iconButton {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px;
+    padding: 4px;
+  }
+
+  /* Hide login button on mobile */
+  .loginButton {
+    display: none !important;
+  }
+
+  /* Hide language chip on mobile to save space */
+  .languageChip {
+    display: none !important;
+  }
+
+  /* Hide actionsSection (no longer used) */
+  .actionsSection {
+    display: none !important;
+  }
+
+  .drawerItem {
+    font-size: 15px;
+  }
+}
+
+/* Desktop: Hide hamburger, show navigation */
+@media (min-width: 769px) {
+  .hamburgerButton {
+    display: none;
+  }
+
+  .centerNav {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 8px;
+  }
+
+  .appName {
+    font-size: var(--text-sm);
+  }
+
+  .logo {
+    height: 28px;
+    width: 28px;
+  }
+
+  .logoText {
+    height: 36px;
+    max-height: 36px;
+  }
+
+  .actionButtons {
+    gap: 3px;
+  }
+
+  /* Hamburger - smaller on tiny screens */
+  .hamburgerButton {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 18px;
+  }
+
+  /* Smaller icons on tiny screens */
+  .userAvatar {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 10px;
+  }
+
+  .iconButton {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px;
+    font-size: 12px;
+  }
+
+  .drawerBody {
+    padding: 12px 16px;
+  }
+
+  .drawerItem {
+    padding: 8px 12px;
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .drawerSection {
+    font-size: 12px;
+    padding: 8px 8px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .hamburgerButton,
+  .languageChip,
+  .loginButton {
+    display: none;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--border-dark);
+    box-shadow: none;
+    background: var(--surface-primary);
+    backdrop-filter: none;
+  }
+}
+
+/* Notification Badge & Pulse Animation */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.avatarBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  border: 2px solid white;
+  z-index: 10;
+}

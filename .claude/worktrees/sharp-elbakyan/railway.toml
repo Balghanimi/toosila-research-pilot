@@ -1,0 +1,12 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+rootDirectory = "."
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Explicitly disable auto-detection
+[build.environment]
+NIXPACKS_NO_DEFAULT_PHASES = "true"

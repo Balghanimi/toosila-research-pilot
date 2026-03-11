@@ -1,0 +1,1111 @@
+const express = require('express');
+const router = express.Router();
+const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const { query } = require('../config/db');
+const config = require('../config/env');
+const { hashPassword, verifyPassword, validatePasswordStrength } = require('../utils/password');
+
+const OTPIQ_API_KEY = process.env.OTPIQ_API_KEY;
+
+// Debug logging for API key (only in development)
+if (process.env.NODE_ENV === 'development') {
+  console.log('[DEV] OTP Routes Loaded');
+  console.log('[DEV] OTPIQ_API_KEY exists:', !!OTPIQ_API_KEY);
+}
+
+// Diagnostic endpoint to check OTPIQ configuration (development only)
+if (process.env.NODE_ENV === 'development') {
+  // eslint-disable-next-line no-unused-vars
+  router.get('/debug-config', (req, res) => {
+    res.json({
+      otpiqKeyExists: !!OTPIQ_API_KEY,
+      otpiqKeyLength: OTPIQ_API_KEY?.length || 0,
+      otpiqKeyPrefix: OTPIQ_API_KEY?.substring(0, 10) + '...',
+      nodeEnv: process.env.NODE_ENV,
+    });
+  });
+}
+
+/**
+ * Generate a random 6-digit OTP code
+ */
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Helper function to format Iraqi phone numbers
+ * Accepts: 07XXXXXXXXX, 7XXXXXXXXX, +9647XXXXXXXXX, 009647XXXXXXXXX
+ * Returns: +9647XXXXXXXXX or null if invalid
+ */
+function formatIraqiPhone(phone) {
+  if (!phone) return null;
+
+  // Remove all non-digits except leading +
+  let cleaned = phone.replace(/[^\d+]/g, '');
+
+  // Handle different formats
+  if (cleaned.startsWith('+964')) {
+    // Already in correct format
+  } else if (cleaned.startsWith('964')) {
+    cleaned = '+' + cleaned;
+  } else if (cleaned.startsWith('07')) {
+    cleaned = '+964' + cleaned.substring(1);
+  } else if (cleaned.startsWith('7')) {
+    cleaned = '+964' + cleaned;
+  } else if (cleaned.startsWith('00964')) {
+    cleaned = '+' + cleaned.substring(2);
+  } else {
+    return null;
+  }
+
+  // Validate Iraqi mobile number format
+  // Iraqi mobile numbers: +9647[3-9]XXXXXXXX (10 digits after country code)
+  const iraqiMobileRegex = /^\+9647[3-9]\d{8}$/;
+  if (!iraqiMobileRegex.test(cleaned)) {
+    return null;
+  }
+
+  return cleaned;
+}
+
+/**
+ * @swagger
+ * /otp/send:
+ *   post:
+ *     summary: Send OTP to phone number (only for NEW users)
+ *     description: Checks if user exists. If exists, returns user info for direct login. If not, sends OTP for registration.
+ *     tags: [OTP]
+ */
+router.post('/send', async (req, res) => {
+  // Only log in development mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEV] OTP Send Request');
+  }
+
+  try {
+    let { phone } = req.body;
+
+    // Validate and format phone number
+    phone = formatIraqiPhone(phone);
+
+    if (!phone) {
+      // Phone validation failed - no log needed
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف غير صحيح. يرجى إدخال رقم عراقي صحيح',
+      });
+    }
+
+    // ============================================
+    // CHECK IF USER EXISTS
+    // ============================================
+    const existingUser = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+
+    if (existingUser.rows.length > 0) {
+      // User exists - check if they have a password set
+      const user = existingUser.rows[0];
+
+      if (user.password) {
+        // User has password - require password login (NO automatic login!)
+        return res.json({
+          success: true,
+          userExists: true,
+          hasPassword: true,
+          requiresPassword: true,
+          message: 'يرجى إدخال كلمة المرور لتسجيل الدخول',
+        });
+      } else {
+        // User exists but NO password - need to set password with OTP verification
+        // Continue to send OTP (below) - user will set password after verification
+      }
+    }
+
+    // ============================================
+
+    // Check rate limiting (max 5 OTPs per phone per hour)
+    const recentOTPs = await query(
+      `SELECT COUNT(*) FROM otp_requests
+       WHERE phone = $1 AND created_at > NOW() - INTERVAL '1 hour'`,
+      [phone]
+    );
+
+    if (parseInt(recentOTPs.rows[0].count) >= 5) {
+      return res.status(429).json({
+        success: false,
+        error: 'تم تجاوز الحد المسموح. حاول بعد ساعة.',
+      });
+    }
+
+    // Check if OTPIQ API key is configured
+    if (!OTPIQ_API_KEY) {
+      console.error('OTPIQ_API_KEY not configured');
+      return res.status(500).json({
+        success: false,
+        error: 'خدمة التحقق غير متوفرة حالياً',
+      });
+    }
+
+    // Generate OTP code locally
+    const code = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEV] Generated OTP code:', code);
+    }
+
+    // Invalidate previous OTPs for this phone
+    await query(`UPDATE otp_requests SET verified = true WHERE phone = $1 AND verified = false`, [
+      phone,
+    ]);
+
+    // Store OTP in database
+    await query(
+      `INSERT INTO otp_requests (phone, code, channel, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [phone, code, 'whatsapp', expiresAt]
+    );
+
+    // Send OTP via OTPIQ (WhatsApp first, then SMS fallback)
+    const phoneWithoutPlus = phone.replace('+', '');
+    let channel = 'whatsapp';
+
+    try {
+      // Try WhatsApp first
+
+      const whatsappResponse = await axios.post(
+        'https://api.otpiq.com/api/sms',
+        {
+          phoneNumber: phoneWithoutPlus,
+          smsType: 'verification',
+          verificationCode: code,
+          provider: 'whatsapp-sms',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${OTPIQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
+      );
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV] OTP sent to ${phone} via WhatsApp`);
+      }
+
+      res.json({
+        success: true,
+        message: 'تم إرسال رمز التحقق عبر واتساب',
+        channel: 'whatsapp',
+      });
+    } catch (whatsappError) {
+      // Only log detailed errors in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[DEV] OTPIQ WhatsApp Error:', whatsappError.message);
+      }
+
+      // Try SMS fallback
+      try {
+        const smsResponse = await axios.post(
+          'https://api.otpiq.com/api/sms',
+          {
+            phoneNumber: phoneWithoutPlus,
+            smsType: 'verification',
+            verificationCode: code,
+            provider: 'sms',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${OTPIQ_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
+          }
+        );
+
+        // Update channel in database
+        await query(
+          `UPDATE otp_requests SET channel = 'sms'
+           WHERE phone = $1 AND code = $2`,
+          [phone, code]
+        );
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[DEV] OTP sent to ${phone} via SMS`);
+        }
+
+        res.json({
+          success: true,
+          message: 'تم إرسال رمز التحقق عبر SMS',
+          channel: 'sms',
+        });
+      } catch (smsError) {
+        // Only log detailed errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[DEV] OTPIQ SMS Error:', smsError.message);
+        }
+
+        // Delete the OTP record since we couldn't send it
+        await query(`DELETE FROM otp_requests WHERE phone = $1 AND code = $2`, [phone, code]);
+
+        // Get detailed error message from OTPIQ
+        const otpiqErrorMsg =
+          smsError.response?.data?.message || smsError.response?.data?.error || smsError.message;
+        const statusCode = smsError.response?.status;
+
+        let userErrorMsg = 'فشل في إرسال رمز التحقق. حاول مرة أخرى.';
+        if (statusCode === 401) {
+          userErrorMsg = 'خطأ في إعدادات خدمة التحقق. يرجى التواصل مع الدعم.';
+        } else if (statusCode === 400) {
+          userErrorMsg = 'رقم الهاتف غير صالح. تأكد من إدخال رقم عراقي صحيح.';
+        } else if (statusCode === 402 || otpiqErrorMsg?.toLowerCase().includes('balance')) {
+          userErrorMsg = 'خدمة التحقق غير متوفرة مؤقتاً. يرجى المحاولة لاحقاً.';
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Final error message to user:', userErrorMsg);
+          console.error('OTPIQ error details:', otpiqErrorMsg);
+        }
+
+        res.status(500).json({
+          success: false,
+          error: userErrorMsg,
+          debug: process.env.NODE_ENV === 'development' ? otpiqErrorMsg : undefined,
+        });
+      }
+    }
+  } catch (error) {
+    console.error('OTP Send General Error:', error.message);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error Stack:', error.stack);
+    }
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في النظام. حاول مرة أخرى.',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/verify:
+ *   post:
+ *     summary: Verify OTP code
+ *     description: Verifies the 6-digit OTP code locally (in our database)
+ *     tags: [OTP]
+ */
+router.post('/verify', async (req, res) => {
+  try {
+    let { phone, code } = req.body;
+
+    phone = formatIraqiPhone(phone);
+    if (!phone || !code) {
+      return res.status(400).json({
+        success: false,
+        error: 'البيانات غير مكتملة',
+      });
+    }
+
+    // Validate code format (6 digits)
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({
+        success: false,
+        error: 'رمز التحقق يجب أن يكون 6 أرقام',
+      });
+    }
+
+    // Verify code in our database (NOT via OTPIQ)
+    const result = await query(
+      `SELECT * FROM otp_requests
+       WHERE phone = $1
+       AND code = $2
+       AND verified = false
+       AND expires_at > NOW()
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [phone, code]
+    );
+
+    if (result.rows.length === 0) {
+      // Increment attempts counter for rate limiting
+      await query(
+        `UPDATE otp_requests
+         SET attempts = attempts + 1
+         WHERE phone = $1 AND verified = false`,
+        [phone]
+      );
+
+      return res.status(400).json({
+        success: false,
+        error: 'رمز التحقق غير صحيح أو منتهي الصلاحية',
+      });
+    }
+
+    // Mark OTP as verified (keep record so complete-registration can check it)
+    await query(`UPDATE otp_requests SET verified = true WHERE id = $1`, [result.rows[0].id]);
+
+    // Check if user exists
+    const userResult = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+
+    if (userResult.rows.length > 0) {
+      // Existing user - login
+      const user = userResult.rows[0];
+
+      // Generate JWT token
+      const token = jwt.sign({ id: user.id, role: user.role || 'user' }, config.JWT_SECRET, {
+        expiresIn: config.JWT_EXPIRES_IN,
+      });
+
+      // Update phone_verified status
+      await query(
+        `UPDATE users SET phone_verified = true, phone_verified_at = NOW()
+         WHERE phone = $1`,
+        [phone]
+      );
+
+      return res.json({
+        success: true,
+        isNewUser: false,
+        token: token,
+        user: {
+          id: user.id,
+          name: user.name,
+          phone: phone,
+          email: user.email,
+          isDriver: user.is_driver,
+          role: user.role || 'user',
+          phoneVerified: true,
+        },
+      });
+    } else {
+      // New user - needs to complete profile
+      return res.json({
+        success: true,
+        isNewUser: true,
+        phone: phone,
+      });
+    }
+  } catch (error) {
+    console.error('OTP Verify Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في التحقق. حاول مرة أخرى.',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/complete-registration:
+ *   post:
+ *     summary: Complete registration for new users
+ *     description: Creates a new user account after phone verification
+ *     tags: [OTP]
+ */
+router.post('/complete-registration', async (req, res) => {
+  try {
+    let { phone, name, is_driver, password } = req.body;
+
+    phone = formatIraqiPhone(phone);
+    if (!phone || !name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'البيانات غير مكتملة. يرجى إدخال الاسم ورقم الهاتف.',
+      });
+    }
+
+    // Password is now REQUIRED for new users
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'كلمة المرور مطلوبة',
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: passwordValidation.message,
+      });
+    }
+
+    // Verify that this phone was recently verified (within last 10 minutes)
+    const verifiedOTP = await query(
+      `SELECT * FROM otp_requests
+       WHERE phone = $1 AND verified = true
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [phone]
+    );
+
+    if (verifiedOTP.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'يرجى التحقق من رقم الهاتف أولاً',
+      });
+    }
+
+    // Check if phone is already registered
+    const existingUser = await query('SELECT id FROM users WHERE phone = $1', [phone]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف مسجل مسبقاً',
+      });
+    }
+
+    // Hash password before storing
+    const hashedPassword = await hashPassword(password);
+
+    // Create new user with password
+    const result = await query(
+      `INSERT INTO users (name, phone, phone_verified, phone_verified_at, is_driver, role, language_preference, password, password_changed_at)
+       VALUES ($1, $2, true, NOW(), $3, 'user', 'ar', $4, NOW())
+       RETURNING id, name, phone, is_driver, role, created_at`,
+      [name.trim(), phone, is_driver || false, hashedPassword]
+    );
+
+    const user = result.rows[0];
+
+    // Clean up used OTP records for this phone (prevent replay)
+    await query(`DELETE FROM otp_requests WHERE phone = $1`, [phone]);
+
+    // Generate JWT token (new user gets 'user' role by default)
+    const token = jwt.sign({ id: user.id, role: user.role || 'user' }, config.JWT_SECRET, {
+      expiresIn: config.JWT_EXPIRES_IN,
+    });
+
+    res.json({
+      success: true,
+      token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        isDriver: user.is_driver,
+        role: user.role || 'user',
+        phoneVerified: true,
+      },
+    });
+  } catch (error) {
+    console.error('Complete Registration Error:', error);
+
+    if (error.code === '23505') {
+      // Unique violation (PostgreSQL)
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف مسجل مسبقاً',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'فشل في إكمال التسجيل. حاول مرة أخرى.',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/login-existing:
+ *   post:
+ *     summary: Login for existing users (requires OTP verification)
+ *     description: Logs in an existing user after verifying their phone via OTP
+ *     tags: [OTP]
+ */
+router.post('/login-existing', async (req, res) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== Login Existing User Request ===');
+    console.log('Request body:', req.body);
+  }
+
+  try {
+    let { phone, otp } = req.body;
+
+    // Validate and format phone number
+    phone = formatIraqiPhone(phone);
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف غير صحيح',
+      });
+    }
+
+    // SECURITY FIX: Require OTP verification
+    if (!otp) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف ورمز التحقق مطلوبان',
+      });
+    }
+
+    // Verify OTP code first
+    const otpResult = await query(
+      `SELECT * FROM otp_requests
+       WHERE phone = $1
+       AND code = $2
+       AND verified = false
+       AND expires_at > NOW()
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [phone, otp]
+    );
+
+    if (otpResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'رمز التحقق غير صحيح أو منتهي الصلاحية',
+      });
+    }
+
+    // Delete the used OTP to prevent reuse
+    await query(`DELETE FROM otp_requests WHERE id = $1`, [otpResult.rows[0].id]);
+
+    // Find the user
+    const userResult = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'المستخدم غير موجود',
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Update phone_verified status
+    await query(`UPDATE users SET phone_verified = true, phone_verified_at = NOW() WHERE id = $1`, [
+      user.id,
+    ]);
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, role: user.role || 'user' }, config.JWT_SECRET, {
+      expiresIn: config.JWT_EXPIRES_IN,
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEV] User logged in successfully:', user.id);
+    }
+
+    res.json({
+      success: true,
+      token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: phone,
+        email: user.email,
+        isDriver: user.is_driver,
+        role: user.role || 'user',
+        phoneVerified: true,
+      },
+    });
+  } catch (error) {
+    console.error('Login Existing User Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في تسجيل الدخول. حاول مرة أخرى.',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/login-with-password:
+ *   post:
+ *     summary: Login with phone number and password
+ *     description: Secure login for users who have set a password
+ *     tags: [OTP]
+ */
+router.post('/login-with-password', async (req, res) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEV] Password Login Request');
+  }
+
+  try {
+    let { phone, password } = req.body;
+
+    // Validate and format phone number
+    phone = formatIraqiPhone(phone);
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف غير صحيح',
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'كلمة المرور مطلوبة',
+      });
+    }
+
+    // Find the user
+    const userResult = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'رقم الهاتف أو كلمة المرور غير صحيحة',
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Check if user has a password set
+    if (!user.password) {
+      return res.status(400).json({
+        success: false,
+        error: 'لم يتم تعيين كلمة مرور لهذا الحساب. يرجى استخدام رمز التحقق OTP',
+        requiresPasswordSetup: true,
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await verifyPassword(password, user.password);
+
+    if (!isPasswordValid) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEV] Invalid password attempt for user:', user.id);
+      }
+      return res.status(401).json({
+        success: false,
+        error: 'رقم الهاتف أو كلمة المرور غير صحيحة',
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, role: user.role || 'user' }, config.JWT_SECRET, {
+      expiresIn: config.JWT_EXPIRES_IN,
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEV] User logged in with password:', user.id);
+    }
+
+    res.json({
+      success: true,
+      token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: phone,
+        email: user.email,
+        isDriver: user.is_driver,
+        role: user.role || 'user',
+        phoneVerified: user.phone_verified,
+      },
+    });
+  } catch (error) {
+    console.error('Password Login Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في تسجيل الدخول. حاول مرة أخرى.',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/set-password:
+ *   post:
+ *     summary: Set password for existing user (requires OTP verification)
+ *     description: Allows existing users without password to set one after OTP verification
+ *     tags: [OTP]
+ */
+router.post('/set-password', async (req, res) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEV] Set Password Request');
+  }
+
+  try {
+    let { phone, password, otpCode } = req.body;
+
+    // Validate and format phone number
+    phone = formatIraqiPhone(phone);
+
+    if (!phone || !password || !otpCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'جميع الحقول مطلوبة',
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: passwordValidation.message,
+      });
+    }
+
+    // Verify OTP code (must be already verified from step 2)
+    const otpResult = await query(
+      `SELECT * FROM otp_requests
+       WHERE phone = $1
+       AND code = $2
+       AND verified = true
+       AND expires_at > NOW()
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [phone, otpCode]
+    );
+
+    if (otpResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'رمز التحقق غير صحيح أو منتهي الصلاحية',
+      });
+    }
+
+    // Delete the used OTP to prevent replay attacks
+    await query(`DELETE FROM otp_requests WHERE id = $1`, [otpResult.rows[0].id]);
+
+    // Find user
+    const userResult = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'المستخدم غير موجود',
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Update user with password
+    await query(
+      `UPDATE users
+       SET password = $1, password_changed_at = NOW(), phone_verified = true, phone_verified_at = NOW()
+       WHERE id = $2`,
+      [hashedPassword, user.id]
+    );
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, role: user.role || 'user' }, config.JWT_SECRET, {
+      expiresIn: config.JWT_EXPIRES_IN,
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEV] Password set for user:', user.id);
+    }
+
+    res.json({
+      success: true,
+      token: token,
+      message: 'تم تعيين كلمة المرور بنجاح',
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: phone,
+        email: user.email,
+        isDriver: user.is_driver,
+        role: user.role || 'user',
+        phoneVerified: true,
+      },
+    });
+  } catch (error) {
+    console.error('Set Password Error:', error.message);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error stack:', error.stack);
+    }
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في تعيين كلمة المرور. حاول مرة أخرى.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/forgot-password:
+ *   post:
+ *     summary: Request password reset via OTP
+ *     description: Send OTP to user's phone for password reset. User must already exist.
+ *     tags: [OTP]
+ */
+router.post('/forgot-password', async (req, res) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEV] Forgot Password Request');
+  }
+
+  try {
+    let { phone } = req.body;
+
+    // Validate and format phone number
+    phone = formatIraqiPhone(phone);
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف غير صحيح. يرجى إدخال رقم عراقي صحيح',
+      });
+    }
+
+    // Check if user exists
+    const userResult = await query('SELECT id, name, phone FROM users WHERE phone = $1', [phone]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'رقم الهاتف غير مسجل في النظام',
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Rate limiting (max 3 per hour for password reset)
+    const recentResets = await query(
+      `SELECT COUNT(*) FROM otp_requests
+       WHERE phone = $1 
+       AND channel = 'password_reset'
+       AND created_at > NOW() - INTERVAL '1 hour'`,
+      [phone]
+    );
+
+    if (parseInt(recentResets.rows[0].count) >= 3) {
+      return res.status(429).json({
+        success: false,
+        error: 'تم تجاوز الحد المسموح لإعادة تعيين كلمة المرور. حاول بعد ساعة.',
+      });
+    }
+
+    // Generate OTP
+    const code = generateOTP();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEV] Forgot password OTP:', code);
+    }
+
+    // Invalidate previous password reset OTPs
+    await query(
+      `UPDATE otp_requests SET verified = true 
+       WHERE phone = $1 AND channel = 'password_reset' AND verified = false`,
+      [phone]
+    );
+
+    // Store OTP
+    await query(
+      `INSERT INTO otp_requests (phone, code, channel, expires_at)
+       VALUES ($1, $2, 'password_reset', $3)`,
+      [phone, code, expiresAt]
+    );
+
+    // Send OTP via OTPIQ
+    const phoneWithoutPlus = phone.replace('+', '');
+
+    try {
+      await axios.post(
+        'https://api.otpiq.com/api/sms',
+        {
+          phoneNumber: phoneWithoutPlus,
+          smsType: 'verification',
+          verificationCode: code,
+          provider: 'whatsapp-sms',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${OTPIQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
+      );
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV] Password reset OTP sent to ${phone}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'تم إرسال رمز التحقق إلى هاتفك',
+        channel: 'whatsapp',
+      });
+    } catch (otpError) {
+      console.error('Forgot password OTP send error:', otpError);
+
+      // Try SMS fallback
+      try {
+        await axios.post(
+          'https://api.otpiq.com/api/sms',
+          {
+            phoneNumber: phoneWithoutPlus,
+            smsType: 'verification',
+            verificationCode: code,
+            provider: 'sms',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${OTPIQ_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
+          }
+        );
+
+        res.json({
+          success: true,
+          message: 'تم إرسال رمز التحقق عبر SMS',
+          channel: 'sms',
+        });
+      } catch (smsError) {
+        console.error('SMS fallback also failed:', smsError);
+        res.status(500).json({
+          success: false,
+          error: 'فشل في إرسال رمز التحقق. حاول مرة أخرى.',
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في النظام. حاول مرة أخرى.',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /otp/reset-password:
+ *   post:
+ *     summary: Reset password with OTP verification
+ *     description: Verify OTP and set new password
+ *     tags: [OTP]
+ */
+router.post('/reset-password', async (req, res) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEV] Reset Password Request');
+  }
+
+  try {
+    let { phone, otp, newPassword } = req.body;
+
+    // Validate and format phone number
+    phone = formatIraqiPhone(phone);
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الهاتف غير صحيح',
+      });
+    }
+
+    if (!otp || !/^\d{6}$/.test(otp)) {
+      return res.status(400).json({
+        success: false,
+        error: 'رمز التحقق يجب أن يكون 6 أرقام',
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'كلمة المرور الجديدة مطلوبة',
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(newPassword);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: passwordValidation.message,
+      });
+    }
+
+    // Verify OTP
+    const otpResult = await query(
+      `SELECT * FROM otp_requests
+       WHERE phone = $1
+       AND code = $2
+       AND channel = 'password_reset'
+       AND verified = false
+       AND expires_at > NOW()
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [phone, otp]
+    );
+
+    if (otpResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'رمز التحقق غير صحيح أو منتهي الصلاحية',
+      });
+    }
+
+    // Delete OTP after use to prevent replay attacks
+    await query(`DELETE FROM otp_requests WHERE id = $1`, [otpResult.rows[0].id]);
+
+    // Get user
+    const userResult = await query('SELECT * FROM users WHERE phone = $1', [phone]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'المستخدم غير موجود',
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    await query(
+      `UPDATE users 
+       SET password = $1, 
+           password_changed_at = NOW(), 
+           phone_verified = true, 
+           phone_verified_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $2`,
+      [hashedPassword, user.id]
+    );
+
+    // Generate JWT token (auto-login after reset)
+    const token = jwt.sign({ id: user.id, role: user.role || 'user' }, config.JWT_SECRET, {
+      expiresIn: config.JWT_EXPIRES_IN,
+    });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEV] Password reset for user: ${user.id}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'تم إعادة تعيين كلمة المرور بنجاح',
+      token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: phone,
+        email: user.email,
+        isDriver: user.is_driver,
+        role: user.role || 'user',
+        phoneVerified: true,
+      },
+    });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'حدث خطأ في إعادة تعيين كلمة المرور. حاول مرة أخرى.',
+    });
+  }
+});
+
+module.exports = router;

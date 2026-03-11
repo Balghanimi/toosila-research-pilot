@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-11-11T07:53:38.903Z",
+  "duration": "0.91s",
+  "analysis": {
+    "totalFiles": 103,
+    "totalFunctions": 427,
+    "testedFunctions": 426,
+    "untestedFunctions": 1,
+    "coveragePercentage": "99.77"
+  },
+  "testing": {
+    "totalTests": 0,
+    "passed": 0,
+    "failed": 0,
+    "passRate": "NaN"
+  },
+  "coverage": {},
+  "errors": []
+}
