@@ -9,6 +9,7 @@ import {
   DeleteAccountModal,
   UserTypeModal,
 } from '../components/SettingsModals';
+import { trackFeature } from '../utils/analyticsTracker';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -37,7 +38,11 @@ export default function Settings() {
           icon: '🌐',
           label: 'اللغة',
           value: language === 'ar' ? 'العربية' : 'English',
-          action: () => changeLanguage(language === 'ar' ? 'en' : 'ar'),
+          action: () => {
+            const newLang = language === 'ar' ? 'en' : 'ar';
+            trackFeature.languageChanged(newLang);
+            changeLanguage(newLang);
+          },
         },
         {
           icon: '🔔',

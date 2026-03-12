@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLines } from '../../context/LinesContext';
 import styles from './LineDetails.module.css';
+import { trackFeature } from '../../utils/analyticsTracker';
 
 // Helper functions
 const formatTime = (time) => {
@@ -44,6 +45,7 @@ const LineDetails = () => {
 
   useEffect(() => {
     if (lineId) {
+      trackFeature.lineViewed(lineId);
       fetchLineById(lineId);
     }
   }, [lineId, fetchLineById]);
@@ -64,6 +66,7 @@ const LineDetails = () => {
         paymentMethod: 'cash',
       });
 
+      trackFeature.lineSubscribed(lineId);
       alert('تم الاشتراك بنجاح! ✅');
       navigate('/subscriptions');
     } catch (err) {

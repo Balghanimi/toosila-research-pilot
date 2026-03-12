@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useMode } from '../../context/ModeContext';
 import { demandsAPI } from '../../services/api';
 import LocationPicker from '../../components/UI/LocationPicker';
+import { trackRide } from '../../utils/analyticsTracker';
 
 export default function PostDemand() {
   const [isAnimated, setIsAnimated] = useState(false);
@@ -272,6 +273,7 @@ export default function PostDemand() {
       console.log('PostDemand - Sending to API:', demandData);
       const response = await demandsAPI.create(demandData);
       console.log('✅ Demand created successfully:', response);
+      trackRide.demandCreated(response?.data?.demand?.id || response?.id);
       setSuccess(true);
 
       setTimeout(() => {

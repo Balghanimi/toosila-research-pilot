@@ -7,6 +7,7 @@ import LineCard from '../../components/lines/LineCard';
 import LineFilters from '../../components/lines/LineFilters';
 import { citiesAPI } from '../../services/api';
 import styles from './LinesHome.module.css';
+import { trackEngagement } from '../../utils/analyticsTracker';
 
 /**
  * LinesHome - Main page for browsing and searching lines
@@ -46,6 +47,11 @@ const LinesHome = () => {
       }
     };
     loadCities();
+  }, []);
+
+  // Track page view on mount
+  useEffect(() => {
+    trackEngagement.pageViewed('lines');
   }, []);
 
   // Fetch lines on mount and when filters change

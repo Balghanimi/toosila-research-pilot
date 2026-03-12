@@ -6,6 +6,7 @@ import { useMessages } from '../context/MessagesContext';
 import ConversationList from '../components/Chat/ConversationList';
 import ChatInterface from '../components/Chat/ChatInterface';
 import AuthModal from '../components/Auth/AuthModal';
+import { trackEngagement } from '../utils/analyticsTracker';
 
 const Messages = () => {
   const { user, isAuthenticated } = useAuth();
@@ -23,6 +24,7 @@ const Messages = () => {
 
   useEffect(() => {
     setIsAnimated(true);
+    trackEngagement.pageViewed('messages');
   }, []);
 
   // MOBILE FIX: Handle Android back button when chat is open

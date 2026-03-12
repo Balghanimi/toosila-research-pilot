@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useMode } from '../../context/ModeContext';
 import { offersAPI } from '../../services/api';
 import LocationPicker from '../../components/UI/LocationPicker';
+import { trackRide } from '../../utils/analyticsTracker';
 
 export default function PostOfferModern() {
   const [isAnimated, setIsAnimated] = useState(false);
@@ -221,7 +222,8 @@ export default function PostOfferModern() {
         toAddress: toLocation.address,
       };
 
-      await offersAPI.create(offerData);
+      const response = await offersAPI.create(offerData);
+      trackRide.offerCreated(response?.data?.offer?.id || response?.id);
       setSuccess(true);
 
       setTimeout(() => {

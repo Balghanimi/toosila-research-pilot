@@ -7,6 +7,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import CollapsibleSearchForm from '../../components/offers/CollapsibleSearchForm';
 import OfferCard from '../../components/offers/OfferCard';
 import BookingModal from '../../components/BookingModal.jsx';
+import { trackRide } from '../../utils/analyticsTracker';
 
 // Default fallback cities (defined outside component for stability)
 const DEFAULT_CITIES = [
@@ -195,6 +196,7 @@ const ViewOffers = React.memo(function ViewOffers() {
     if (filters.sortBy) filterParams.sortBy = filters.sortBy;
     if (filters.ladiesOnly) filterParams.ladies_only = 'true';
 
+    trackRide.searchPerformed(filterParams);
     fetchOffers(filterParams);
   };
 
@@ -264,6 +266,7 @@ const ViewOffers = React.memo(function ViewOffers() {
       return;
     }
 
+    trackRide.offerViewed(offer.id);
     setSelectedOffer(offer);
     setShowBookingModal(true);
   };
@@ -353,6 +356,7 @@ const ViewOffers = React.memo(function ViewOffers() {
         console.log('📝 Booking ID:', response.data?.booking?.id);
         console.log('📝 Full Booking Object:', response.data?.booking);
 
+        trackRide.bookingCreated(response.data?.booking?.id);
         setShowBookingModal(false);
         setBookingMessage('');
         setSelectedOffer(null);

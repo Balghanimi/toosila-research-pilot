@@ -9,6 +9,7 @@ import { formatLargeNumber, toEnglishNumber } from '../utils/formatters';
 import LocationPicker from '../components/UI/LocationPicker';
 import DateTimeSelector from '../components/DateTimeSelector';
 import styles from './Home.module.css';
+import { trackRide, trackEngagement } from '../utils/analyticsTracker';
 
 const Home = () => {
   const { currentUser } = useAuth();
@@ -39,6 +40,11 @@ const Home = () => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useNotifications();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    trackEngagement.sessionStarted();
+    trackEngagement.pageViewed('home');
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -177,7 +183,8 @@ const Home = () => {
           toAddress: dropCoords.address,
         };
 
-        await offersAPI.create(offerData);
+        const offerResponse = await offersAPI.create(offerData);
+        trackRide.offerCreated(offerResponse?.data?.offer?.id || offerResponse?.id);
         showSuccess('تم نشر العرض بنجاح! ✅');
         clearForm();
         setIsSubmitting(false);
@@ -218,7 +225,8 @@ const Home = () => {
           toAddress: dropCoords.address,
         };
 
-        await demandsAPI.create(demandData);
+        const demandResponse = await demandsAPI.create(demandData);
+        trackRide.demandCreated(demandResponse?.data?.demand?.id || demandResponse?.id);
         showSuccess('تم نشر الطلب بنجاح! ✅');
         clearForm();
         setIsSubmitting(false);

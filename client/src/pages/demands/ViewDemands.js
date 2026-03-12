@@ -7,6 +7,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import DemandResponseForm from '../../components/DemandResponseForm';
 import DemandResponsesList from '../../components/DemandResponsesList';
 import SearchableCitySelect from '../../components/UI/SearchableCitySelect';
+import { trackRide } from '../../utils/analyticsTracker';
 
 // Default fallback cities (defined outside component for stability)
 const DEFAULT_CITIES = [
@@ -199,6 +200,7 @@ export default function ViewDemands() {
     if (filters.toCity) filterParams.toCity = filters.toCity;
     if (filters.earliestDate) filterParams.earliestDate = filters.earliestDate;
 
+    trackRide.searchPerformed(filterParams);
     fetchDemands(filterParams);
   };
 

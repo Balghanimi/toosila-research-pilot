@@ -8,6 +8,7 @@ import DemandResponsesList from '../components/DemandResponsesList';
 import ConfirmDialog from '../components/UI/ConfirmDialog';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import { formatDate, formatTime, formatPrice, formatSeats } from '../utils/formatters';
+import { trackRide } from '../utils/analyticsTracker';
 
 export default function Bookings() {
   const location = useLocation();
@@ -319,6 +320,7 @@ export default function Bookings() {
       onConfirm: async () => {
         try {
           await bookingsAPI.accept(bookingId);
+          trackRide.bookingAccepted(bookingId);
           showSuccess('✅ تم قبول الحجز بنجاح!');
           fetchBookings();
           fetchPendingCount();
@@ -341,6 +343,7 @@ export default function Bookings() {
       onConfirm: async () => {
         try {
           await bookingsAPI.reject(bookingId);
+          trackRide.bookingRejected(bookingId);
           showSuccess('تم رفض الحجز');
           fetchBookings();
           fetchPendingCount();
@@ -363,6 +366,7 @@ export default function Bookings() {
       onConfirm: async () => {
         try {
           await bookingsAPI.cancel(bookingId);
+          trackRide.bookingCancelled(bookingId);
           showSuccess('تم إلغاء الحجز بنجاح');
           fetchBookings();
           fetchPendingCount();
